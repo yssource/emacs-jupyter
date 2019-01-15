@@ -440,6 +440,7 @@ any Jupyter code block, [jupyter]."
 (defun jupyter-org--call-with-src-block-client (def)
   "Call DEF interactively with the current src-block's client."
   (jupyter-org-with-src-block-client
+   (jupyter-ephemeral-server-client jupyter-current-client)
    (call-interactively def)))
 
 (defun jupyter-org-define-key (key def &optional lang)

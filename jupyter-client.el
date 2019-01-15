@@ -1154,6 +1154,10 @@ representation of the results in the current buffer."
               :stop-on-error stop-on-error)))
     (jupyter-send client :shell :execute-request msg)))
 
+(cl-defmethod jupyter-send-execute-request :after ((client jupyter-kernel-client) &rest _)
+  "Call `jupyter-ephemeral-server-client' for CLIENT."
+  (jupyter-ephemeral-server-client client))
+
 (cl-defgeneric jupyter-handle-payload ((source symbol) _payload)
   "Execute the action in a Jupyter PAYLOAD.
 SOURCE is the type of payload and PAYLOAD will be a property list

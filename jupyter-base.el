@@ -564,6 +564,52 @@ the ROUTING-ID of the socket. Return the created socket."
 
 ;;; Helper functions
 
+(defvar server-buffer)
+(defvar jupyter-current-client)
+(defvar jupyter-ephemeral-server-client-timer nil
+  "Timer used to expire the ephemeral client.")
+
+;; TODO: This works if we only consider a single send request that will also
+;; finish within TIMEOUT which is probably 99% of the cases.
+;;
+;; A more general solution would set the client in the server buffer whenever
+;; the code is actually evaluated and then remove it once we get the execute
+;; result. So set it in a status: busy message and unset in an execute-reply
+;; message. We would also have to consider multiple clients.
+(defun jupyter-ephemeral-server-client (client &optional timeout)
+  "Set CLIENT as the `jupyter-current-client' in the `server-buffer'.
+Kill `jupyter-current-client's `server-buffer' local value after
+TIMEOUT seconds, where TIMEOUT defaults to 1.
+
+If a function causes a buffer to be displayed through
+emacsclient, e.g. where a function calls an external command
+which invokes the EDITOR, then we don't know when the buffer will
+be displayed, all we know is that the buffer that will be current
+before display will be `server-buffer'. So we temporarily set
+`jupyter-current-client' in `server-buffer' so that the client
+gets a chance to be propagated to the displayed buffer, see
+`jupyter-repl-persistent-mode'.
+
+For this to work properly you should have something like the
+following in your Emacs configuration
+
+    (server-mode 1)
+    (setenv \"EDITOR\" \"emacsclient\")
+
+before starting any Jupyter kernels and the kernel has to know
+about emacsclient."
+  (when (bound-and-true-p server-mode)
+    (with-current-buffer (get-buffer-create server-buffer)
+      (setq jupyter-current-client client)
+      (when (timerp jupyter-ephemeral-server-client-timer)
+        (cancel-timer jupyter-ephemeral-server-client-timer))
+      (setq jupyter-ephemeral-server-client-timer
+            (run-at-time
+             (or timeout 1) nil
+             (lambda ()
+               (with-current-buffer server-buffer
+                 (setq jupyter-current-client nil))))))))
+
 (defun jupyter-read-plist (file)
   "Read a JSON encoded FILE as a property list."
   (let ((json-object-type 'plist))
