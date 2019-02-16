@@ -255,6 +255,22 @@ per client.
 
 This feature is currently considered experimental and has only been tested for
 simple uses of widgets. See [[id:B15FF43B-114C-4D73-B69C-2095F108EBBB][=jupyter-widget-client=]].
+* Integration with =emacsclient=
+
+If a kernel client sends code to be evaluated that causes the kernel to open a
+file using =emacsclient=, if the opened file has the same =major-mode= as the
+kernel language, then the file's buffer will also be associated with the
+client. This behavior is most useful, for example, when using the =edit=
+function in IJulia.
+
+To enable =server-mode= in Emacs you should have something like the following
+in your Emacs configuration.
+
+#+BEGIN_SRC elisp
+(server-mode 1)
+(setenv "EDITOR" "emacsclient")
+#+END_SRC
+
 * Integration with =org-mode=
 
 For users of =org-mode=, integration with =org-babel= is provided through the
