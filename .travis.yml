@@ -8,12 +8,20 @@ matrix:
 env:
   - EMACS_VERSION=26.1
   - EMACS_VERSION=git-snapshot
+language: c
+cache: ccache
 before_install:
   # Setup paths
   - export PATH=${TRAVIS_BUILD_DIR}/.evm/bin:${HOME}/.cask/bin:${PATH}
   - sudo apt-get update
   # Install emacs
-  - if [[ ${EMACS_VERSION} = git-snapshot ]]; then sudo apt-get install -y texinfo; fi
+  - |
+    if [[ ${EMACS_VERSION} = git-snapshot ]]; then
+        sudo apt-get install -y texinfo
+        EMACS_URL=https://api.github.com/repos/emacs-mirror/emacs/git/refs/heads/master
+        wget $EMACS_URL > ${TRAVIS_BUILD_DIR}/emacs-snapshot
+        export CCACHE_EXTRAFILES=${TRAVIS_BUILD_DIR}/emacs-snapshot
+    fi
   # Use this fork of EVM for dynamic module support
   - git clone https://github.com/ubolonton/evm ${TRAVIS_BUILD_DIR}/.evm
   - evm config path /tmp
