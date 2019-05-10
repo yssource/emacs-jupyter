@@ -19,7 +19,7 @@ before_install:
     if [[ ${EMACS_VERSION} = git-snapshot ]]; then
         sudo apt-get install -y texinfo
         EMACS_URL=http://api.github.com/repos/emacs-mirror/emacs/git/refs/heads/master
-        wget $EMACS_URL > ${TRAVIS_BUILD_DIR}/emacs-snapshot
+        wget -O ${TRAVIS_BUILD_DIR}/emacs-snapshot $EMACS_URL 
         export CCACHE_EXTRAFILES=${TRAVIS_BUILD_DIR}/emacs-snapshot
     fi
   # Use this fork of EVM for dynamic module support
