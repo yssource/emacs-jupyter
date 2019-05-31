@@ -382,7 +382,11 @@ Raise an error on failure."
                      url-request-extra-headers))
             (url-request-data nil))
         (setq url-request-data (concat "password=" (funcall passwd try)))
-        (ignore-errors (jupyter-api-login client))))))
+        (condition-case err
+            (jupyter-api-login client)
+          (error
+           (when (eq (nth 2 err) 'connection-failed)
+             (signal (car err) (cdr err)))))))))
 
 (defvar jupyter-api--authentication-in-progress-p nil)
 
