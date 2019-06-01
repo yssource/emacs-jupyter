@@ -146,6 +146,13 @@ Access should be done through `jupyter-available-kernelspecs'.")))
   ((server :type jupyter-server :initarg :server)
    (kernel :type jupyter-server-kernel :initarg :kernel)))
 
+(cl-defmethod jupyter-comm-id ((comm jupyter-server-kernel-comm))
+  (format "kid=%s" (truncate-string-to-width
+                    (thread-first comm
+                      (oref kernel)
+                      (oref id))
+                    9 nil nil "…")))
+
 ;;;; `jupyter-server' events
 
 (cl-defmethod jupyter-event-handler ((comm jupyter-server)
@@ -330,6 +337,10 @@ ID of the kernel associated with COMM."
                             :kernel (oref manager kernel)
                             :server (oref manager server)))
         (jupyter-comm-start (oref manager comm)))
+      ;; FIXME: Mainly for `jupyter-repl-scratch-buffer'. Maybe we should go
+      ;; through the session endpoint instead of the kernel endpoint?
+      (oset client session
+            (jupyter-session :id (oref (oref manager kernel) id)))
       (oset client kcomm (oref manager comm)))))
 
 ;;; Finding exisisting kernel managers and servers
