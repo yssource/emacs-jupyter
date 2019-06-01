@@ -906,6 +906,9 @@ otherwise nil."
 (defun jupyter-api-binary-content-p (model)
   (equal (plist-get model :format) "base64"))
 
+(defun jupyter-api-notebook-p (model)
+  (equal (plist-get model :format) "json"))
+
 (defun jupyter-api-insert-model-content (model &optional replace beg end)
   "Insert the content of MODEL into the current buffer.
 If REPLACE is non-nil, replace the contents of the current buffer
