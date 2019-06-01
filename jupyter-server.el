@@ -120,12 +120,6 @@ Access should be done through `jupyter-available-kernelspecs'.")))
   "Return a list of all `jupyter-server's."
   jupyter--servers)
 
-(cl-defmethod initialize-instance ((comm jupyter-server) &optional _slots)
-  (cl-call-next-method)
-  (oset comm ioloop (jupyter-server-ioloop
-                     :ws-url (oref comm ws-url)
-                     :ws-headers (jupyter-api-auth-headers comm))))
-
 ;; TODO: Add the server as a slot
 (defclass jupyter-server-kernel (jupyter-meta-kernel)
   ((id
@@ -192,6 +186,21 @@ kernel has a matching ID."
         (run-at-time 0 nil #'jupyter-event-handler client event)))))
 
 ;;;; `jupyter-server' methods
+
+(cl-defmethod jupyter-comm-start ((comm jupyter-server))
+  (unless (and (slot-boundp comm 'ioloop)
+               (jupyter-ioloop-alive-p (oref comm ioloop)))
+    ;; TODO: Is a write to the cookie file and then a read of the cookie file
+    ;; whenever connecting a websocket in a subprocess good enough? If, e.g.
+    ;; the notebook is restarted and it clears the login information, there are
+    ;; sometimes error due to `jupyter-api-request' trying to ask for login
+    ;; information which look like "wrong type argument listp, [http://...]".
+    ;; They don't seem to happens with the changes mentioned, but is it enough?
+    (url-cookie-write-file)
+    (oset comm ioloop (jupyter-server-ioloop
+                       :ws-url (oref comm ws-url)
+                       :ws-headers (jupyter-api-auth-headers comm)))
+    (cl-call-next-method)))
 
 (cl-defmethod jupyter-connect-client ((comm jupyter-server)
                                       (kcomm jupyter-server-kernel-comm))

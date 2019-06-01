@@ -196,6 +196,7 @@ websocket.")
         ;; `jupyter-server-ws-headers'. In the case of the parent process
         ;; doing the authentication, cookies are written to `url-cookie-file'
         ;; and read from this subprocess by the websocket code.
+        (url-cookie-parse-file)
         (push
          (jupyter-api-get-kernel-ws
           jupyter-server-rest-client kernel-id
