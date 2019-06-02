@@ -1,6 +1,6 @@
 ;;; jupyter-repl-client.el --- A Jupyter REPL client -*- lexical-binding: t -*-
 
-;; Copyright (C) 2018 Nathaniel Nicandro
+;; Copyright (C) 2018-2019 Nathaniel Nicandro
 
 ;; Author: Nathaniel Nicandro <nathanielnicandro@gmail.com>
 ;; Created: 08 Jan 2018
@@ -1353,6 +1353,8 @@ the REPL to disable that mode in those buffers. See
         (prog1 t
           (jupyter-stop-channels jupyter-current-client)
           (when (and (jupyter-repl-client-has-manager-p)
+                     (not (object-of-class-p (oref jupyter-current-client manager)
+                                             'jupyter-server-kernel-manager))
                      (yes-or-no-p (format "Shutdown the client's kernel? ")))
             (jupyter-shutdown-kernel (oref jupyter-current-client manager)))
           (cl-loop

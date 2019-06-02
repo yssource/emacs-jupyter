@@ -4,7 +4,7 @@
 
 ;; Author: Nathaniel Nicandro <nathanielnicandro@gmail.com>
 ;; Created: 31 May 2019
-;; Version: 0.0.1
+;; Version: 0.8.0
 ;; X-URL: https://github.com/dzop/emacs-jupyter
 
 ;; This program is free software; you can redistribute it and/or

@@ -329,9 +329,9 @@
   background of a traceback in the REPL buffer to distinguish it from other
   output. In addition to this face, there is also =jupyter-repl-input-prompt=
   and =jupyter-repl-output-prompt=.
-* How to update this file
+* Update project metadata
 
-Examine the output of
+To update this file, examine the output of
 
 #+NAME: changelog
 #+HEADER: :var PREV_VERSION="7554293d" VERSION="master"
@@ -344,27 +344,61 @@ update the =VERSION= variables first.
 
 #+RESULTS: changelog
 
-* Update Version header
+#+NAME: source-files
+#+begin_src elisp
+(append (directory-files default-directory nil ".el$")
+        (directory-files (expand-file-name "test" default-directory) t ".el$"))
+#+end_src
+
+#+NAME: visit-and-save
+#+begin_src elisp
+(lambda (file fun)
+  (let* ((buf (find-buffer-visiting file))
+         (kill (null buf)))
+    (unless buf
+      (setq buf (find-file-noselect file)))
+    (with-current-buffer buf
+      (save-excursion
+        (save-restriction
+          (widen)
+          (goto-char (point-min))
+          (funcall fun)
+          (save-buffer)
+          (when kill
+            (kill-buffer)))))))
+#+end_src
+
+** Update Version header
 
 Update the =Version= in the header of all source files.
 
-#+BEGIN_SRC elisp :results silent :var version="0.8.0"
-(let ((re "^;; Version: \\(\\([0-9]+\\)\\.\\([0-9]+\\)\\.\\([0-9]+\\)\\)" ))
-  (dolist (file (append (directory-files default-directory nil ".el$")
-                        (directory-files (expand-file-name "test" default-directory) t ".el$")))
-    (let* ((buf (find-buffer-visiting file))
-           (kill (null buf)))
-      (unless buf
-        (setq buf (find-file-noselect file)))
-      (with-current-buffer buf
-        (save-excursion
-          (save-restriction
-            (widen)
-            (goto-char (point-min))
-            (when (re-search-forward re nil t)
-              (replace-match version nil nil nil 1))
-            (save-buffer)
-            (when kill
-              (kill-buffer))))))))
-#+END_SRC
+#+begin_src elisp :results silent :var version="0.8.0" files=source-files vs=visit-and-save
+(let ((lexical-binding t)
+      (re "^;; Version: \\(\\([0-9]+\\)\\.\\([0-9]+\\)\\.\\([0-9]+\\)\\)"))
+  (dolist (file files)
+    (funcall
+     vs file (lambda ()
+               (when (re-search-forward re nil t)
+                 (replace-match version nil nil nil 1))))))
+#+end_src
 
+** Update Copyright years
+
+#+begin_src elisp :results silent :var files=source-files vs=visit-and-save
+(let ((lexical-binding t)
+      (re "^;; Copyright (C) \\([0-9]+\\)\\(?:-\\([0-9]+\\)\\)?")
+      (this-year (string-to-number (format-time-string "%Y"))))
+  (dolist (file files)
+    (funcall
+     vs file (lambda ()
+               (when (re-search-forward re nil t)
+                 (let* ((end-group (if (match-string 2) 2 1))
+                        (new-span (= end-group 1))
+                        (year (string-to-number (match-string end-group)))
+                        (new-year (and (<= (1+ year) this-year)
+                                       (number-to-string (1+ year)))))
+                   (when new-year
+                     (if (not new-span) (replace-match new-year nil nil nil end-group)
+                       (goto-char (match-end end-group))
+                       (insert "-" new-year)))))))))
+#+end_src
