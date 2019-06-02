@@ -680,6 +680,7 @@ the same meaning as in `jupyter-connect-repl'."
 
 (defun jupyter-server--kernel-list-entries ()
   (cl-loop
+   with names = nil
    for kernel across (jupyter-api-get-kernel jupyter-current-server)
    collect
    (cl-destructuring-bind
@@ -687,7 +688,12 @@ the same meaning as in `jupyter-connect-repl'."
              connections &allow-other-keys)
        kernel
      (let* ((time (jupyter-decode-time last_activity))
-            (name (propertize name 'face 'font-lock-constant-face))
+            (name
+             (let ((same (cl-remove-if-not
+                          (lambda (x) (string-prefix-p name x)) names)))
+               (when same (setq name (format "%s<%d>" name (length same))))
+               (push name names)
+               (propertize name 'face 'font-lock-constant-face)))
             (activity (propertize (format-time-string "%F %T" time)
                                   'face 'font-lock-doc-face))
             (conns (propertize (number-to-string connections)
