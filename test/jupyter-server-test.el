@@ -207,34 +207,32 @@
 
 (ert-deftest org-babel-jupyter-server-session ()
   :tags '(server org)
-  (let ((url (format "http://localhost:%s" (jupyter-test-ensure-notebook-server)))
-        (initiate-session
-         (lambda (session &optional args)
-           (erase-buffer)
-           (insert (format "\
+  (let* ((url (format "http://localhost:%s" (jupyter-test-ensure-notebook-server)))
+         (remote (file-remote-p (jupyter-tramp-file-name-from-url url)))
+         (initiate-session
+          (lambda (session &optional args)
+            (erase-buffer)
+            (insert (format "\
 #+BEGIN_SRC jupyter-python :session %s %s
 1 + 1
 #+END_SRC" session (or args "")))
-           (goto-char (point-min))
-           (let ((params (nth 2 (org-babel-get-src-block-info))))
-             (org-babel-jupyter-initiate-session
-              (alist-get :session params) params)))))
+            (goto-char (point-min))
+            (let ((params (nth 2 (org-babel-get-src-block-info))))
+              (org-babel-jupyter-initiate-session
+               (alist-get :session params) params)))))
     (jupyter-org-test
      (ert-info ("No session name")
-       (should-error (funcall initiate-session url)))
+       (should-error (funcall initiate-session remote)))
      (let ((server (or (jupyter-find-server url)
                        (jupyter-server :url url))))
        (should (jupyter-server-kernelspecs server))
        (ert-info ("Non-existent kernel")
-         (should-error (funcall initiate-session
-                                (format "%s:py" url) ":kernel foo"))
-         (should-error (funcall initiate-session
-                                (format "%s/123" url))))
+         (should-error (funcall initiate-session session ":kernel foo")))
        (ert-info ("Connect to an existing kernel")
          (let ((id (plist-get (jupyter-api-start-kernel server) :id)))
            (unwind-protect
                (let ((session (funcall initiate-session
-                                       (format "%s/%s" url id))))
+                                       (concat remote id))))
                  (should (not (null session)))
                  (cl-letf (((symbol-function 'yes-or-no-p)
                             (lambda (_prompt) t))
@@ -242,8 +240,10 @@
                             (lambda (_prompt) t)))
                    (kill-buffer session)))
              (ignore-errors (jupyter-api-shutdown-kernel server id)))))
+       (sleep-for 1)
        (ert-info ("Start a new kernel")
-         (let ((session (funcall initiate-session (format "%s:py" url))))
+         (let ((session (funcall initiate-session
+                                 (concat remote "py"))))
            (should (not (null session)))
            (cl-letf (((symbol-function 'yes-or-no-p)
                       (lambda (_prompt) t))

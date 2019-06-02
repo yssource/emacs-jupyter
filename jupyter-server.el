@@ -136,10 +136,12 @@ Access should be done through `jupyter-available-kernelspecs'.")))
     (jupyter-server--verify-kernelspec server spec)
     (cl-destructuring-bind (&key id &allow-other-keys)
         (jupyter-api-start-kernel server (car spec))
-      (oset kernel id id))))
+      (oset kernel id id)
+      (message "START-KERNEL: %s" (oref kernel id)))))
 
 (cl-defmethod jupyter-kill-kernel ((kernel jupyter-server-kernel))
   (cl-call-next-method)
+  (message "KILL-KERNEL: %s" (oref kernel id))
   (slot-makeunbound kernel 'id))
 
 (defclass jupyter-server-kernel-comm (jupyter-comm-layer)
@@ -181,16 +183,18 @@ kernel has a matching ID."
   (let ((kernel-id (cadr event)))
     (setq event (cons (car event) (cddr event)))
     (jupyter-comm-client-loop comm client
-      (when (equal kernel-id (oref (oref client kernel) id))
-        ;; TODO: Since the event handlers of CLIENT will eventually call the
-        ;; `jupyter-handle-message' of a `jupyter-kernel-client' we really
-        ;; don't need to do any filtering based off of a `jupyter-session-id',
-        ;; but maybe should? The `jupyter-handle-message' method will only
-        ;; handle messages that have a parent ID of a previous request so there
-        ;; already is filtering at the kernel client level. I wonder if there
-        ;; is any issue with having an empty session ID in the messages sent by
-        ;; the `jupyter-server-ioloop', see `jupyter-server--dummy-session'.
-        (run-at-time 0 nil #'jupyter-event-handler client event)))))
+      (if (not (slot-boundp (oref client kernel) 'id))
+          (jupyter-comm-stop client)
+        (when (equal kernel-id (oref (oref client kernel) id))
+          ;; TODO: Since the event handlers of CLIENT will eventually call the
+          ;; `jupyter-handle-message' of a `jupyter-kernel-client' we really
+          ;; don't need to do any filtering based off of a `jupyter-session-id',
+          ;; but maybe should? The `jupyter-handle-message' method will only
+          ;; handle messages that have a parent ID of a previous request so there
+          ;; already is filtering at the kernel client level. I wonder if there
+          ;; is any issue with having an empty session ID in the messages sent by
+          ;; the `jupyter-server-ioloop', see `jupyter-server--dummy-session'.
+          (run-at-time 0 nil #'jupyter-event-handler client event))))))
 
 ;;;; `jupyter-server' methods
 
@@ -326,6 +330,7 @@ ID of the kernel associated with COMM."
     (if restart (jupyter-api-restart-kernel server (oref kernel id))
       (when (jupyter-kernel-alive-p manager)
         (jupyter-api-shutdown-kernel server (oref kernel id)))
+      (message "SHUTDOWN-KERNEL: %s" (oref kernel id))
       (jupyter-send server 'disconnect-channels (oref kernel id))
       (jupyter-comm-stop comm))))
 
@@ -337,10 +342,6 @@ ID of the kernel associated with COMM."
                             :kernel (oref manager kernel)
                             :server (oref manager server)))
         (jupyter-comm-start (oref manager comm)))
-      ;; FIXME: Mainly for `jupyter-repl-scratch-buffer'. Maybe we should go
-      ;; through the session endpoint instead of the kernel endpoint?
-      (oset client session
-            (jupyter-session :id (oref (oref manager kernel) id)))
       (oset client kcomm (oref manager comm)))))
 
 ;;; Finding exisisting kernel managers and servers
@@ -537,8 +538,9 @@ the same meaning as in `jupyter-run-repl'."
            t nil t)))
   (or client-class (setq client-class 'jupyter-repl-client))
   (jupyter-error-if-not-client-class-p client-class 'jupyter-repl-client)
-  (cl-destructuring-bind (_manager client)
+  (cl-destructuring-bind (manager client)
       (jupyter-server-start-new-kernel server kernel-name client-class)
+    (message "KENREL: %s" (oref (oref manager kernel) id))
     (jupyter-bootstrap-repl client repl-name associate-buffer display)))
 
 ;;;###autoload
