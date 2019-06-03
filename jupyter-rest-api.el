@@ -402,11 +402,11 @@ Raise an error on failure."
             ;; Check to see if the server is accessible first by trying to
             ;; access the login page and checking if we can make an
             ;; authenticated request afterwards.
-            (let ((jupyter-api-max-authentication-attempts 1))
-              (jupyter-api-password-authenticator client
-                (lambda (_) "")))
             (if (jupyter-api-server-accessible-p client)
-                (oset client auth t)
+                (let ((jupyter-api-max-authentication-attempts 1))
+                  (jupyter-api-password-authenticator client
+                    (lambda (_) ""))
+                  (oset client auth t))
               (when noninteractive
                 (signal 'jupyter-api-login-failed
                         (list "Can't authenticate non-interactively")))

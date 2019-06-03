@@ -67,7 +67,10 @@
 (defvar jupyter-server-ws-headers nil)
 
 (defclass jupyter-server-ioloop (jupyter-ioloop)
-  ((ws-url
+  ;; TODO: Clean this up by removing the need for these and just setting these
+  ;; values in `jupyter-ioloop-start' similar to the `jupyter-channel-ioloop'.
+  ((url :type string :initarg :url)
+   (ws-url
     :type string
     :initarg :ws-url
     :documentation "The URL to connect websockets to.")
@@ -106,6 +109,7 @@ websocket.")
        (push 'jupyter-server-ioloop--recv-messages jupyter-ioloop-pre-hook)
        (setq jupyter-server-ws-headers (quote ,(oref ioloop ws-headers))
              jupyter-server-rest-client (jupyter-rest-client
+                                         :url ,(oref ioloop url)
                                          :ws-url ,(oref ioloop ws-url))))))
   (jupyter-server-ioloop-add-send-event ioloop)
   (jupyter-server-ioloop-add-connect-channels-event ioloop)

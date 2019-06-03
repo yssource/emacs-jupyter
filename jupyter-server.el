@@ -209,6 +209,7 @@ kernel has a matching ID."
     ;; They don't seem to happens with the changes mentioned, but is it enough?
     (url-cookie-write-file)
     (oset comm ioloop (jupyter-server-ioloop
+                       :url (oref comm url)
                        :ws-url (oref comm ws-url)
                        :ws-headers (jupyter-api-auth-headers comm)))
     (cl-call-next-method)))
