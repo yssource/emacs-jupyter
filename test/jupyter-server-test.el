@@ -171,7 +171,8 @@
                       (should (jupyter-comm-alive-p kcomm))
                       (jupyter-comm-stop kcomm))))
               (jupyter-comm-stop server)))
-        (jupyter-api-shutdown-kernel server id)))))
+        (message "server ID: %s" id)
+        (ignore-errors (jupyter-api-shutdown-kernel server id))))))
 
 (ert-deftest jupyter-server-kernel-manager ()
   :tags '(server)
@@ -189,7 +190,8 @@
           (progn
             (should (jupyter-kernel-alive-p manager))
             )
-        (jupyter-api-shutdown-kernel server id)))))
+        (message "kernel manager ID: %s" id)
+        (ignore-errors (jupyter-api-shutdown-kernel server id))))))
 
 (ert-deftest jupyter-server-start-new-kernel ()
   :tags '(server)

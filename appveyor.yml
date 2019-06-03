@@ -53,4 +53,4 @@ test_script:
   - cd %APPVEYOR_BUILD_FOLDER%
   - ps: $env:PATH = "$(bash -lc 'cd $APPVEYOR_BUILD_FOLDER; run-cask exec-path');$env:PATH"
   - ps: $env:EMACSLOADPATH = (bash -lc 'cd $APPVEYOR_BUILD_FOLDER; run-cask load-path')
-  - ert-runner.bat --script -L .
+  - ert-runner.bat --script -L . -t server
